@@ -16,10 +16,14 @@ const firestore = firebase.firestore();
 
 function App() {
   const [user] = useAuthState(auth);
+
   return (
     <div className="App">
-      <header className="App-header"></header>
-      {user ? <Chatroom /> : <SignIn />}
+      <header>
+        <h1>ChatBox 📬</h1>
+        <SignOut />
+      </header>
+      <section>{user ? <Chatroom /> : <SignIn />}</section>
     </div>
   );
 }
@@ -39,39 +43,44 @@ function SignOut() {
 }
 
 function Chatroom() {
-  const dummy = useRef();
-
+  const location = useRef();
   const messageRef = firestore.collection("messages");
-  const query = messageRef.orderBy("createdAt").limit(50);
+  const query = messageRef.orderBy("createdAt").limit(25);
 
   const [messages] = useCollectionData(query, { idField: "id" });
   const [formValue, setFormValue] = useState("");
 
   const sendMessage = async (e) => {
     e.preventDefault();
+
     const { uid, photoURL } = auth.currentUser;
+
     await messageRef.add({
       text: formValue,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       uid,
       photoURL,
     });
+
     setFormValue("");
-    dummy.current.scrollIntoView({ behaviour: "smooth" });
+    location.current.scrollIntoView({ behaviour: "smooth" });
   };
   return (
     <>
-      <div>
+      <main>
         {messages &&
           messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)}
-        <div ref={dummy}></div>
-      </div>
+        <span ref={location}></span>
+      </main>
       <form onSubmit={sendMessage}>
         <input
           value={formValue}
           onChange={(e) => setFormValue(e.target.value)}
+          placeholder="Type something ✏️"
         />
-        <button type="submit">send</button>
+        <button type="submit" disabled={!formValue}>
+          Send🚀
+        </button>
       </form>
     </>
   );
@@ -84,7 +93,12 @@ function ChatMessage(props) {
 
   return (
     <div className={`message ${messageClass}`}>
-      <img src={photoURL} />
+      <img
+        src={
+          photoURL ||
+          "https://upload.wikimedia.org/wikipedia/en/6/6f/KennyMcCormick.png"
+        }
+      />
       <p>{text}</p>
     </div>
   );
